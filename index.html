@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width,initial-scale=1">
+<title>童行服务器连通性测试</title>
+<style>
+  body {
+    font-family: -apple-system, sans-serif;
+    background: #f3f6fb;
+    padding: 28px 16px;
+    color: #253047;
+  }
+  .card {
+    max-width: 460px;
+    margin: 30px auto;
+    padding: 25px;
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 6px 24px #0000000a;
+  }
+  button {
+    width: 100%;
+    padding: 16px;
+    border: 0;
+    border-radius: 12px;
+    background: #2463eb;
+    color: white;
+    font-size: 16px;
+  }
+  pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: #f3f6fb;
+    padding: 15px;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>🌏 童行 · 网络连通性测试</h2>
+  <p>测试 GitHub 网页能否访问 Cloudflare API</p>
+  <button onclick="runTest()">测试服务器连接</button>
+  <h3 id="status">等待测试</h3>
+  <pre id="result">点击按钮开始</pre>
+</div>
+
+<script>
+// 替换为你创建的真实 Worker 地址
+const API_URL =
+  "https://tongxing-api-test.zhangwei426311.workers.dev/";
+
+async function runTest() {
+  const status = document.getElementById("status");
+  const result = document.getElementById("result");
+
+  status.textContent = "正在连接...";
+  result.textContent = "";
+  const start = performance.now();
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(API_URL, {
+      cache: "no-store",
+      signal: controller.signal
+    });
+
+    const data = await response.json();
+    const elapsed = Math.round(performance.now() - start);
+
+    if (!response.ok || data.status !== "ok") {
+      throw new Error("服务器返回异常");
+    }
+
+    status.textContent = "✅ 连接成功";
+    result.textContent =
+      "耗时：" + elapsed + " ms\n\n" +
+      JSON.stringify(data, null, 2);
+
+  } catch (error) {
+    status.textContent = "❌ 连接失败";
+    result.textContent =
+      error.name === "AbortError"
+      ? "请求超时（10 秒）"
+      : error.toString();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+</script>
+</body>
+</html>
